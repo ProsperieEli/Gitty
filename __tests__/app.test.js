@@ -2,6 +2,7 @@ const pool = require('../lib/utils/pool');
 const setup = require('../data/setup');
 const request = require('supertest');
 const app = require('../lib/app');
+const Post = require('../lib/models/Post');
 
 jest.mock('../lib/utils/GitHubUser');
 
@@ -35,6 +36,40 @@ describe('backend routes', () => {
       exp: expect.any(Number),
     });
   });
+
+  it('should create a post', async () => {
+    const agent = request.agent(app);
+    await agent.get('/api/v1/github/login/callback/?code=42').redirects(1);
+
+    const res = await agent.post('/api/v1/post').send({
+      text: 'Creating',
+    });
+    expect(res.body).toEqual({
+      id: expect.any(String),
+      text: 'Creating',
+      user_id: expect.any(String),
+    });
+  });
+
+  it('should get all post', async () => {
+    const agent = request.agent(app);
+    await agent.get('/api/v1/github/login/callback/?code=42').redirects(1);
+
+    await agent.post('/api/v1/post').send({
+      text: 'Creating',
+    });
+
+    const res = await agent.get('/api/v1/post');
+
+    expect(res.body).toEqual([
+      {
+        id: expect.any(String),
+        text: 'Creating',
+        user_id: expect.any(String),
+      },
+    ]);
+  });
+
   it('should delete a session', async () => {
     const res = await request
       .agent(app)
